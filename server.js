@@ -1,3 +1,9 @@
+const express = require('express');
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.use(express.text());
+
 let queue = "";
 
 app.get("/update", (req, res) => {
@@ -13,6 +19,10 @@ app.get("/view", (req, res) => {
   res.send(`**Queue (Page 1)**\n${lines.slice(0, 10).join("\n")}`);
 });
 
+app.get("/viewraw", (req, res) => {
+  res.send(queue);
+});
+
 app.get("/page/:num", (req, res) => {
   if (!queue || queue.length === 0) return res.send("❌ Queue is empty.");
   const page = parseInt(req.params.num);
@@ -25,4 +35,8 @@ app.get("/page/:num", (req, res) => {
   const paged = lines.slice(start, end).map((t, i) => `${start + i + 1} - ${t}`);
 
   res.send(`**Queue (Page ${page})**\n${paged.join("\n")}`);
+});
+
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
