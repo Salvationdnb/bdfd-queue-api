@@ -2,10 +2,19 @@ const express = require('express');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(express.text());
+app.use(express.text()); // To read plain text in POST body
 
 let queue = "";
 
+// Accept updates via POST (preferred)
+app.post("/update", (req, res) => {
+  const newQueue = req.body;
+  if (!newQueue) return res.send("❌ No queue provided.");
+  queue = newQueue;
+  res.send("✅ Queue updated.");
+});
+
+// Fallback GET update (optional)
 app.get("/update", (req, res) => {
   const newQueue = req.query.queue;
   if (!newQueue) return res.send("❌ No queue provided.");
@@ -13,16 +22,19 @@ app.get("/update", (req, res) => {
   res.send("✅ Queue updated.");
 });
 
+// Main queue view
 app.get("/view", (req, res) => {
   if (!queue || queue.length === 0) return res.send("❌ Queue is empty.");
   const lines = queue.split("|").map((track, i) => `${i + 1} - ${track}`);
   res.send(`**Queue (Page 1)**\n${lines.slice(0, 10).join("\n")}`);
 });
 
+// Raw queue value for bot processing
 app.get("/viewraw", (req, res) => {
-  res.send(queue);
+  res.send(queue || "");
 });
 
+// Pagination support
 app.get("/page/:num", (req, res) => {
   if (!queue || queue.length === 0) return res.send("❌ Queue is empty.");
   const page = parseInt(req.params.num);
@@ -38,5 +50,5 @@ app.get("/page/:num", (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
