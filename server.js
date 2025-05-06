@@ -1,34 +1,28 @@
-const express = require("express");
-const app = express();
-app.use(express.json());
+let queue = "";
 
-let queue = []; // Global queue
-
-// Add a track
-app.get("/add", (req, res) => {
-  const { artist, title } = req.query;
-  if (!artist || !title) return res.send("❌ Missing artist or title.");
-  queue.push(`${artist} - ${title}`);
-  res.send(`✅ Added: ${artist} - ${title}`);
+app.get("/update", (req, res) => {
+  const newQueue = req.query.queue;
+  if (!newQueue) return res.send("❌ No queue provided.");
+  queue = newQueue;
+  res.send("✅ Queue updated.");
 });
 
-// View queue
 app.get("/view", (req, res) => {
-  if (queue.length === 0) return res.send("❌ Queue is empty.");
-  let list = queue
-    .slice(0, 10)
-    .map((track, i) => `${i + 1} - ${track}`)
-    .join("\n");
-  res.send(`**Queue (Page 1)**\n\n${list}`);
+  if (!queue || queue.length === 0) return res.send("❌ Queue is empty.");
+  const lines = queue.split("|").map((track, i) => `${i + 1} - ${track}`);
+  res.send(`**Queue (Page 1)**\n${lines.slice(0, 10).join("\n")}`);
 });
 
-// Skip to next track
-app.get("/next", (req, res) => {
-  if (queue.length === 0) return res.send("❌ Queue is empty.");
-  const current = queue.shift();
-  res.send(`▶️ Now playing: **${current}**`);
-});
+app.get("/page/:num", (req, res) => {
+  if (!queue || queue.length === 0) return res.send("❌ Queue is empty.");
+  const page = parseInt(req.params.num);
+  const lines = queue.split("|");
+  const totalPages = Math.ceil(lines.length / 10);
+  if (page < 1 || page > totalPages) return res.send("❌ Invalid page.");
 
-app.listen(3000, () => {
-  console.log("Queue API running on port 3000");
+  const start = (page - 1) * 10;
+  const end = start + 10;
+  const paged = lines.slice(start, end).map((t, i) => `${start + i + 1} - ${t}`);
+
+  res.send(`**Queue (Page ${page})**\n${paged.join("\n")}`);
 });
