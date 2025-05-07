@@ -2,21 +2,25 @@ const express = require('express');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Accept plain text from any Content-Type (for BDFD compatibility)
 app.use(express.text({ type: "*/*" }));
 
 let queue = "";
 
-// POST /update — preferred way to update queue
+// Handle queue update (POST)
 app.post("/update", (req, res) => {
-  console.log("POST /update received:", req.body); // Debug log
   const newQueue = req.body;
+
   if (!newQueue) return res.send("❌ No queue provided.");
+  if (newQueue.trim() === "") {
+    queue = "";
+    return res.send("✅ Queue cleared.");
+  }
+
   queue = newQueue;
   res.send("✅ Queue updated.");
 });
 
-// Optional fallback: GET /update?queue=...
+// Optional: Fallback GET support (not used by BDFD)
 app.get("/update", (req, res) => {
   const newQueue = req.query.queue;
   if (!newQueue) return res.send("❌ No queue provided.");
@@ -24,19 +28,16 @@ app.get("/update", (req, res) => {
   res.send("✅ Queue updated.");
 });
 
-// View first 10 tracks with formatting
 app.get("/view", (req, res) => {
   if (!queue || queue.length === 0) return res.send("❌ Queue is empty.");
   const lines = queue.split("|").map((track, i) => `${i + 1} - ${track}`);
   res.send(`**Queue (Page 1)**\n${lines.slice(0, 10).join("\n")}`);
 });
 
-// Raw queue string for BDFD bot to parse
 app.get("/viewraw", (req, res) => {
   res.send(queue || "");
 });
 
-// Paginated view
 app.get("/page/:num", (req, res) => {
   if (!queue || queue.length === 0) return res.send("❌ Queue is empty.");
   const page = parseInt(req.params.num);
